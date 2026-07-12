@@ -2,11 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { getDocumentMetadata, getDocumentPreviewUrl, uploadSignature } from '../services/documentService';
 import toast from 'react-hot-toast';
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
+import 'react-pdf/dist/esm/Page/TextLayer.css';
+
+// Configure the worker for react-pdf
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url,
+).toString();
 
 export const DocumentPreviewPage = () => {
   const { id } = useParams();
   const [doc, setDoc] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  
+  const [numPages, setNumPages] = useState<number>();
+  const [pageNumber, setPageNumber] = useState<number>(1);
 
   useEffect(() => {
     fetchDoc();
@@ -41,6 +53,17 @@ export const DocumentPreviewPage = () => {
     }
   };
 
+  function onDocumentLoadSuccess({ numPages }: { numPages: number }): void {
+    setNumPages(numPages);
+  }
+
+  const changePage = (offset: number) => {
+    setPageNumber(prevPageNumber => prevPageNumber + offset);
+  }
+
+  const previousPage = () => changePage(-1);
+  const nextPage = () => changePage(1);
+
   if (loading) return <div className="p-6">Loading document...</div>;
   if (!doc) return <div className="p-6">Document not found</div>;
 
@@ -55,11 +78,45 @@ export const DocumentPreviewPage = () => {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden h-[600px] mb-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden mb-6 flex flex-col items-center p-4">
         {doc.mimeType === 'application/pdf' ? (
-           <iframe src={previewUrl} className="w-full h-full border-0" title="PDF Preview" />
+           <div className="flex flex-col items-center w-full overflow-auto h-[600px] border bg-gray-100 dark:bg-gray-900">
+             <Document
+               file={previewUrl}
+               onLoadSuccess={onDocumentLoadSuccess}
+               loading={<p>Loading PDF...</p>}
+             >
+               <Page 
+                  pageNumber={pageNumber} 
+                  renderTextLayer={true} 
+                  renderAnnotationLayer={true} 
+               />
+             </Document>
+             
+             {numPages && (
+               <div className="flex items-center gap-4 mt-4 bg-white dark:bg-gray-800 p-2 rounded shadow absolute bottom-12">
+                 <button 
+                   disabled={pageNumber <= 1} 
+                   onClick={previousPage}
+                   className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded disabled:opacity-50"
+                 >
+                   Previous
+                 </button>
+                 <span>
+                   Page {pageNumber} of {numPages}
+                 </span>
+                 <button 
+                   disabled={pageNumber >= numPages} 
+                   onClick={nextPage}
+                   className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded disabled:opacity-50"
+                 >
+                   Next
+                 </button>
+               </div>
+             )}
+           </div>
         ) : (
-           <div className="flex flex-col items-center justify-center h-full">
+           <div className="flex flex-col items-center justify-center h-[600px]">
              <p className="mb-4">Preview not available for this file type.</p>
              <a href={previewUrl} download className="px-4 py-2 bg-blue-600 text-white rounded">Download File</a>
            </div>
