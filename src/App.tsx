@@ -30,6 +30,12 @@ import { DealsPage } from './pages/deals/DealsPage';
 // Chat Pages
 import { ChatPage } from './pages/chat/ChatPage';
 
+// Collaboration Pages
+import { MeetingsPage } from './pages/MeetingsPage';
+import { MeetingCalendarPage } from './pages/MeetingCalendarPage';
+import { VideoCallPage } from './pages/VideoCallPage';
+import { DocumentPreviewPage } from './pages/DocumentPreviewPage';
+
 function App() {
   return (
     <AuthProvider>
@@ -70,7 +76,15 @@ function App() {
           
           <Route path="/documents" element={<DashboardLayout />}>
             <Route index element={<DocumentsPage />} />
+            <Route path=":id" element={<DocumentPreviewPage />} />
           </Route>
+          
+          <Route path="/meetings" element={<DashboardLayout />}>
+            <Route index element={<MeetingsPage />} />
+            <Route path="calendar" element={<MeetingCalendarPage />} />
+          </Route>
+          
+          <Route path="/video/:meetingId" element={<VideoCallPage />} />
           
           <Route path="/settings" element={<DashboardLayout />}>
             <Route index element={<SettingsPage />} />

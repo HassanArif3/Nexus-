@@ -1,0 +1,26 @@
+import { Socket } from 'socket.io';
+import jwt from 'jsonwebtoken';
+import { User } from '../models/User';
+
+export const socketAuthMiddleware = async (socket: Socket, next: (err?: Error) => void) => {
+  try {
+    const token = socket.handshake.auth?.token;
+    
+    if (!token) {
+      return next(new Error('Authentication error: No token provided'));
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { id: string };
+    const user = await User.findById(decoded.id).select('-passwordHash');
+
+    if (!user) {
+      return next(new Error('Authentication error: User not found'));
+    }
+
+    // Attach user to socket data
+    socket.data.user = user;
+    next();
+  } catch (error) {
+    next(new Error('Authentication error: Invalid token'));
+  }
+};
